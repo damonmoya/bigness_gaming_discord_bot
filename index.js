@@ -1,3 +1,8 @@
+//process.env 
+const dotenv = require('dotenv');
+
+dotenv.config();
+
 const { Client, GatewayIntentBits, EmbedBuilder } = require("discord.js");
 const client = new Client({
   intents: [
@@ -30,9 +35,7 @@ client.on("message", (message) => {
   }
 });
 
-client.login(
-  "MTA0OTY1MDc5Mjg4NzQ5MjY2MQ.GA9g2X.iBcPmK-WQvtsfzbXNAF1rDCkneB0JcDElFBzAM"
-);
+client.login(process.env.DISCORD_TOKEN);
 
 // Crea una función que maneje el comando "!embed"
 function handleEmbedCommand(message, title, description) {
