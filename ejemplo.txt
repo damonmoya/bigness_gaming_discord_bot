@@ -1,0 +1,20 @@
+const Discord = require('discord.js');
+
+// Crea una función que maneje el comando "!embed"
+function handleEmbedCommand(message, title, description) {
+  // Crea una instancia de RichEmbed
+  const embed = new Discord.RichEmbed()
+    .setTitle(title)
+    .setDescription(description)
+    .setColor(0xff0000);
+
+  // Envía el mensaje embebido al canal
+  message.channel.send(embed);
+}
+
+// Asigna la función como manejador del comando "!embed"
+client.on('message', message => {
+  if (message.content === '!embed') {
+    handleEmbedCommand(message, 'Título del mensaje', 'Descripción del mensaje');
+  }
+});
