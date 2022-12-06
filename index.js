@@ -1,15 +1,12 @@
 const dotenv = require("dotenv");
 dotenv.config();
 
+const { InteractionType } = require("discord.js");
+
 const fs = require("node:fs");
 const path = require("node:path");
 
-const {
-  Client,
-  Events,
-  GatewayIntentBits,
-  Collection,
-} = require("discord.js");
+const { Client, Events, GatewayIntentBits, Collection } = require("discord.js");
 const client = new Client({
   intents: [
     GatewayIntentBits.DirectMessages,
@@ -44,17 +41,15 @@ client.on("ready", () => {
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  //if (!interaction.isChatInputCommand()) return;
+  let command = interaction.client.commands.get(interaction.commandName);
 
-  const command = interaction.client.commands.get(interaction.commandName);
-
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
-    return;
+  if (interaction.type === InteractionType.ModalSubmit) {
+    command = interaction.client.commands.get("sugerencia");
   }
 
   try {
-    await command.execute(interaction);
+    await command.execute(interaction, client);
   } catch (error) {
     console.error(error);
     await interaction.reply({
