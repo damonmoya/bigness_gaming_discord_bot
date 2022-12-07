@@ -48,6 +48,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
     command = interaction.client.commands.get("sugerencia");
   }
 
+  //interaction button
+  if (interaction.isButton()) {
+    if (interaction.customId === "buttonSuggestAccept" || interaction.customId === "buttonSuggestDeny") {
+      command = interaction.client.commands.get("sugerencia");
+    }
+  }
+
+
   try {
     await command.execute(interaction, client);
   } catch (error) {
