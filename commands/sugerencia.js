@@ -1,4 +1,5 @@
 const { SlashCommandBuilder } = require("discord.js");
+const { v4: uuidv4 } = require("uuid");
 
 const userReferences = require("../data/userReferences.json");
 
@@ -38,15 +39,14 @@ module.exports = {
     modal.addComponents(firstActionRow);
 
     if (interaction.type === InteractionType.ModalSubmit) {
-      await interaction.reply("¡Gracias por tu sugerencia!");
-      const id = userReferences.suggestion_id;
-      const suggestionId = id + 1;
+      const uuid = uuidv4();
       const user = interaction.user;
       const description =
         interaction.fields.getTextInputValue("descriptionInput");
       const embed = new EmbedBuilder()
-        .setTitle("Sugerencia de " + user.tag + " (ID: " + suggestionId + ")")
+        .setTitle("Sugerencia de " + user.tag)
         .setDescription(description)
+        .setFooter({text: "ID: " + uuid})
         .setColor("#FFFF00")
         .setTimestamp();
       /*       const row = new ActionRowBuilder().addComponents([
@@ -63,18 +63,9 @@ module.exports = {
       client.channels.cache
         .get(channel)
         .send({ embeds: [embed], components: [] });
-      //get the message that was just sent
-      const lastMessage = await client.channels.cache.get(channel).messages.fetch({
-        limit: 1,
-      });
-      //sleep for 1 second
-      await new Promise((r) => setTimeout(r, 1000));
-      //add user and randomId to userReferences.json, inside usersSuggestions
-      userReferences.suggestion_id = suggestionId;
       userReferences.userSuggestions.push({
-        messageId: lastMessage.first().id,
-        suggestionId: suggestionId,
         userId: user.id,
+        id: uuid,
       });
       //save userReferences.json
       const fs = require("fs");
@@ -85,6 +76,7 @@ module.exports = {
           if (err) console.log(err);
         }
       );
+      await interaction.reply("¡Gracias por tu sugerencia!");
     } else {
       await interaction.showModal(modal);
     }
