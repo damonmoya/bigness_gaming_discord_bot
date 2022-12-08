@@ -1,7 +1,4 @@
 const { SlashCommandBuilder } = require("discord.js");
-
-const userReferences = require("../data/userReferences.json");
-
 const { EmbedBuilder } = require("discord.js");
 
 module.exports = {

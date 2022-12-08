@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { v4: uuidv4 } = require("uuid");
 
-const userReferences = require("../data/userReferences.json");
+const userReferences = require("../data/userSuggestions.json");
 
 const {
   ActionRowBuilder,
@@ -67,10 +67,10 @@ module.exports = {
         userId: user.id,
         id: uuid,
       });
-      //save userReferences.json
+
       const fs = require("fs");
       fs.writeFile(
-        "./data/userReferences.json",
+        "./data/userSuggestions.json",
         JSON.stringify(userReferences),
         (err) => {
           if (err) console.log(err);
