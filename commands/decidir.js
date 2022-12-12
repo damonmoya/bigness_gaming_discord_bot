@@ -1,10 +1,18 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { EmbedBuilder } = require("discord.js");
 
+const userSuggestions = require("../data/userSuggestions.json");
+
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("decidir")
-    .setDescription("Decidir una sugerencia")
+    .setDescription("Decidir el veredicto una sugerencia")
+    .addStringOption((option) =>
+      option
+        .setName("id")
+        .setDescription("ID de la sugerencia")
+        .setRequired(true)
+    )
     .addStringOption((option) =>
       option
         .setName("veredicto")
@@ -14,16 +22,14 @@ module.exports = {
           { name: "Rechazar", value: "deny" }
         )
         .setRequired(true)
-    )
-    .addStringOption((option) =>
-      option
-        .setName("id")
-        .setDescription("ID de la sugerencia")
-        .setRequired(true)
     ),
+
   async execute(interaction, client) {
     if (!interaction.member.roles.cache.has(process.env.ADMIN_ROLE_ID)) {
-      await interaction.reply({content: "¡No tienes permisos para usar este comando!", ephemeral: true});
+      await interaction.reply({
+        content: "¡No tienes permisos para usar este comando!",
+        ephemeral: true,
+      });
       return;
     }
     const veredicto = interaction.options.getString("veredicto");
@@ -32,19 +38,25 @@ module.exports = {
     const channel = process.env.CONTACT_CHANNEL_ID;
     const messages = await client.channels.cache.get(channel).messages.fetch();
 
-    let message;
-    let embed;
+    let message = null;
+    let found = false;
+    let embed = null;
     //iterate over messages
     messages.forEach((msg) => {
       if (msg.embeds.length > 0) {
         embed = msg.embeds[0];
-        if (embed.footer.text === "ID: " + id) {
+        if (embed.footer.text.includes(id)) {
           message = msg;
+          found = true;
+          return;
         }
       }
     });
-    if (!message) {
-      await interaction.reply("¡No se encontró la sugerencia!");
+    if (!found) {
+      await interaction.reply({
+        content: "¡No se encontró la sugerencia!",
+        ephemeral: true,
+      });
       return;
     }
 
@@ -62,6 +74,25 @@ module.exports = {
       .setColor(color)
       .setTimestamp();
     message.edit({ embeds: [embed2], components: [] });
-    await interaction.reply(text);
+
+    // Remove suggestion from userSuggestions.json
+    const index = userSuggestions.userSuggestions.findIndex(
+      (suggestion) => suggestion.id === id
+    );
+
+    if (index > -1) {
+      userSuggestions.userSuggestions.splice(index, 1);
+    }
+
+    const fs = require("fs");
+    fs.writeFile(
+      "./data/userSuggestions.json",
+      JSON.stringify(userSuggestions),
+      (err) => {
+        if (err) console.log(err);
+      }
+    );
+
+    await interaction.reply({content: text, ephemeral: true});
   },
 };

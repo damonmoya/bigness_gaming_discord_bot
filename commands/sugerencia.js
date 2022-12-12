@@ -10,8 +10,6 @@ const {
   TextInputStyle,
   InteractionType,
   EmbedBuilder,
-  ButtonBuilder,
-  ButtonStyle,
 } = require("discord.js");
 
 module.exports = {
@@ -46,19 +44,9 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setTitle("Sugerencia de " + user.tag)
         .setDescription(description)
-        .setFooter({text: "ID: " + uuid})
+        .setFooter({ text: "ID: " + uuid })
         .setColor("#FFFF00")
         .setTimestamp();
-      /*       const row = new ActionRowBuilder().addComponents([
-        new ButtonBuilder()
-          .setCustomId("buttonSuggestAccept")
-          .setLabel("Aceptar sugerencia")
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId("buttonSuggestDeny")
-          .setLabel("Rechazar sugerencia")
-          .setStyle(ButtonStyle.Danger),
-      ]); */
       const channel = process.env.CONTACT_CHANNEL_ID;
       client.channels.cache
         .get(channel)
@@ -76,7 +64,10 @@ module.exports = {
           if (err) console.log(err);
         }
       );
-      await interaction.reply("¡Gracias por tu sugerencia!");
+      await interaction.reply({
+        content: "¡Gracias por tu sugerencia!",
+        ephemeral: true,
+      });
     } else {
       await interaction.showModal(modal);
     }
