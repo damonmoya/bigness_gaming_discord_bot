@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 const { ActionRowBuilder } = require("discord.js");
-const { ButtonBuilder, ButtonStyle } = require("discord.js");
+const { ButtonBuilder, ButtonStyle, InteractionType } = require("discord.js");
 const { v4: uuidv4 } = require("uuid");
 
 const videogames = require("../data/videogames.json");
@@ -19,6 +19,14 @@ module.exports = {
         .setDescription("El juego en que buscas grupo para jugar")
         .addChoices(...videogames.list)
     )
+    .addIntegerOption((option) =>
+      option
+        .setName("tamaño_grupo")
+        .setDescription("Tamaño máximo del grupo")
+        .setRequired(true)
+        .setMinValue(2)
+        .setMaxValue(10)
+    )
     .addStringOption((option) =>
       option
         .setName("detalles")
@@ -26,22 +34,144 @@ module.exports = {
           "Detalles sobre la partida (por ejemplo, si es casual o competitivo, modos de juego, etc.)"
         )
         .setRequired(true)
-    )
-    .addIntegerOption((option) =>
-      option
-        .setName("número_jugadores")
-        .setDescription(
-          "Número de jugadores que estás buscando para jugar"
-        )
-        .setRequired(true)
     ),
+
   async execute(interaction, client) {
+    if (interaction.isButton()) {
+      const buttonId = interaction.customId.split("_")[1];
+      const session = userReferences.user_sessions.find(
+        (session) => session.id === buttonId
+      );
+      if (session) {
+        // Check if user is already in session
+        /* const userInSession = session.members.find(
+          (member) => member.userId === interaction.user.id
+        );
+        if (userInSession) {
+          interaction.reply({
+            content: "Ya estás en esta sesión",
+            ephemeral: true,
+          });
+          return;
+        } */
+        // Check if session is full
+        if (session.members.length < session.maxMembers) {
+          session.members.push({
+            userId: interaction.user.id,
+          });
+          const fs = require("fs");
+          fs.writeFile(
+            "./data/userSessions.json",
+            JSON.stringify(userReferences),
+            (err) => {
+              if (err) {
+                console.log(err);
+              }
+            }
+          );
+
+          // Update embed
+          const channel = process.env.CONTACT_CHANNEL_ID;
+          const messages = await client.channels.cache
+            .get(channel)
+            .messages.fetch();
+
+          let message = null;
+          let found = false;
+          let embed = null;
+          //iterate over messages
+          messages.forEach((msg) => {
+            if (msg.embeds.length > 0) {
+              embed = msg.embeds[0];
+              if (embed.footer.text === "ID de la sesión: " + session.id) {
+                message = msg;
+                found = true;
+                return;
+              }
+            }
+          });
+          if (!found) {
+            await interaction.reply({
+              content: "¡No se encontró la sesión!",
+              ephemeral: true,
+            });
+            return;
+          }
+
+          let color = "Green";
+          let row = new ActionRowBuilder().addComponents([
+            new ButtonBuilder()
+              .setCustomId("joinButton_" + buttonId)
+              .setLabel("Unirse")
+              .setStyle(ButtonStyle.Success),
+          ]);
+          if (session.members.length === session.maxMembers) {
+            color = "#FF0000";
+          }
+
+          const members = new Array(session.maxMembers);
+          members.fill("Vacío");
+          session.members.forEach((member, index) => {
+            members[index] = `<@${member.userId}>`;
+          });
+
+          console.log(embed);
+
+          const embed2 = new EmbedBuilder()
+            .setAuthor({
+              name: embed.author.name,
+              iconURL: embed.author.iconURL,
+            })
+            .setTitle(embed.title)
+            .setDescription(embed.description)
+            .setThumbnail(embed.thumbnail.url)
+            .addFields(
+              { name: "Juego", value: session.game },
+              ...members.map((member, index) => {
+                return {
+                  name: "Miembro " + (index + 1),
+                  value: member,
+                  inline: true,
+                };
+              })
+            )
+            .setFooter({ text: "ID de la sesión: " + session.id })
+            .setColor(color)
+            .setTimestamp();
+
+          if (color != "Green") {
+            message.edit({ embeds: [embed2] });
+          } else {
+            message.edit({ embeds: [embed2], components: [row] });
+          }
+
+          interaction.reply({
+            content: `Te has unido a la sesión de <@${session.leaderId}>`,
+            ephemeral: true,
+          });
+        } else {
+          interaction.reply({
+            content: "La sesión está llena",
+            ephemeral: true,
+          });
+        }
+      } else {
+        interaction.reply({
+          content: "No se ha encontrado la sesión",
+          ephemeral: true,
+        });
+      }
+      return;
+    }
+
     const game = interaction.options.getString("juego");
     const details = interaction.options.getString("detalles");
-    const players = interaction.options.getInteger("número_jugadores");
+    const players = interaction.options.getInteger("tamaño_grupo");
+
+    const uuidSession = uuidv4();
 
     userReferences.user_sessions.push({
-      id: uuidv4(),
+      id: uuidSession,
       leaderId: interaction.user.id,
       game: game,
       maxMembers: players,
@@ -62,11 +192,10 @@ module.exports = {
         }
       }
     );
-    const uuidJoinButton = uuidv4();
 
     const row = new ActionRowBuilder().addComponents([
       new ButtonBuilder()
-        .setCustomId(uuidJoinButton)
+        .setCustomId("joinButton_" + uuidSession)
         .setLabel("Unirse")
         .setStyle(ButtonStyle.Success),
     ]);
@@ -75,6 +204,8 @@ module.exports = {
 
     const members = new Array(players);
     members.fill("Vacío");
+    //first member is always the leader
+    members[0] = `<@${user.id}>`;
 
     //get game from videogames.json
     const gameStored = videogames.list.find(
@@ -83,11 +214,11 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setAuthor({ name: user.username, iconURL: user.avatarURL() })
-      .setTitle(`${user.username} busca grupo para jugar a ${game}`)
+      .setTitle(`${user.username} está buscando grupo para jugar`)
       .setDescription(details)
       .setThumbnail(gameStored.thumbnail)
       .addFields(
-        { name: "Líder", value: `<@${user.id}>` },
+        { name: "Juego", value: game },
         ...members.map((member, index) => {
           return {
             name: "Miembro " + (index + 1),
@@ -96,7 +227,7 @@ module.exports = {
           };
         })
       )
-      .setFooter({ text: "¡Puedes unirte con el botón de abajo!" })
+      .setFooter({ text: "ID de la sesión: " + uuidSession })
       .setColor("Green")
       .setTimestamp();
 

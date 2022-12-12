@@ -50,8 +50,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   //interaction button
   if (interaction.isButton()) {
-    if (interaction.customId === "buttonSuggestAccept" || interaction.customId === "buttonSuggestDeny") {
-      command = interaction.client.commands.get("sugerencia");
+    if (interaction.customId.includes("joinButton_")) {
+      command = interaction.client.commands.get("jugar");
     }
   }
 
