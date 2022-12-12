@@ -1,0 +1,82 @@
+{
+  "list": [
+    {
+      "name": "Apex Legends",
+      "value": "Apex Legends",
+      "thumbnail": "https://i.imgur.com/3jCHaUw.png",
+      "image": null
+    },
+    {
+      "name": "Call of Duty: Modern Warfare II",
+      "value": "Call of Duty: Modern Warfare II",
+      "thumbnail": "https://i.imgur.com/DHd65Jt.png",
+      "image": null
+    },
+    {
+      "name": "Fall Guys",
+      "value": "Fall Guys",
+      "thumbnail": "https://i.imgur.com/K1dO4As.png",
+      "image": null
+    },
+    {
+      "name": "FIFA",
+      "value": "FIFA",
+      "thumbnail": "https://i.imgur.com/ajWT6n6.jpg",
+      "image": null
+    },
+    {
+      "name": "Fortnite",
+      "value": "Fortnite",
+      "thumbnail": "https://i.imgur.com/Ap0dH1a.png",
+      "image": null
+    },
+    {
+      "name": "GTA V",
+      "value": "GTA V",
+      "thumbnail": "https://i.imgur.com/8WoD3G5.png",
+      "image": null
+    },
+    {
+      "name": "League of Legends",
+      "value": "League of Legends",
+      "thumbnail": "https://i.imgur.com/LLjT9qu.png",
+      "image": null
+    },
+    {
+      "name": "Minecraft",
+      "value": "Minecraft",
+      "thumbnail": "https://i.imgur.com/liUmXn8.png",
+      "image": null
+    },
+    {
+      "name": "Overwatch 2",
+      "value": "Overwatch 2",
+      "thumbnail": "https://i.imgur.com/QNFQxDy.png",
+      "image": null
+    },
+    {
+      "name": "Roblox",
+      "value": "Roblox",
+      "thumbnail": "https://i.imgur.com/Tm0aYSm.png",
+      "image": null
+    },
+    {
+      "name": "Rocket League",
+      "value": "Rocket League",
+      "thumbnail": "https://i.imgur.com/ekhkvHL.png",
+      "image": null
+    },
+    {
+      "name": "Valorant",
+      "value": "Valorant",
+      "thumbnail": "https://i.imgur.com/UH0ph8s.png",
+      "image": null
+    },
+    {
+      "name": "Warzone 2",
+      "value": "Warzone 2",
+      "thumbnail": "https://i.imgur.com/Nr6xL1N.png",
+      "image": null
+    }
+  ]
+}

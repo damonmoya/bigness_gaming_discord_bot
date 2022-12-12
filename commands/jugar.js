@@ -31,7 +31,7 @@ module.exports = {
       option
         .setName("número_jugadores")
         .setDescription(
-          "Número de jugadores totales del grupo (contando contigo)"
+          "Número de jugadores que estás buscando para jugar"
         )
         .setRequired(true)
     ),
@@ -76,10 +76,16 @@ module.exports = {
     const members = new Array(players);
     members.fill("Vacío");
 
+    //get game from videogames.json
+    const gameStored = videogames.list.find(
+      (videogame) => videogame.name === game
+    );
+
     const embed = new EmbedBuilder()
       .setAuthor({ name: user.username, iconURL: user.avatarURL() })
       .setTitle(`${user.username} busca grupo para jugar a ${game}`)
       .setDescription(details)
+      .setThumbnail(gameStored.thumbnail)
       .addFields(
         { name: "Líder", value: `<@${user.id}>` },
         ...members.map((member, index) => {
