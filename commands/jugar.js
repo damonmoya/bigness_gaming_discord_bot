@@ -72,7 +72,6 @@ module.exports = {
     ]);
 
     const user = interaction.user;
-    console.log(user);
 
     const members = new Array(players);
     members.fill("Vacío");

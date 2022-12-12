@@ -22,6 +22,10 @@ module.exports = {
         .setRequired(true)
     ),
   async execute(interaction, client) {
+    if (!interaction.member.roles.cache.has(process.env.ADMIN_ROLE_ID)) {
+      await interaction.reply({content: "¡No tienes permisos para usar este comando!", ephemeral: true});
+      return;
+    }
     const veredicto = interaction.options.getString("veredicto");
     const id = interaction.options.getString("id");
 
