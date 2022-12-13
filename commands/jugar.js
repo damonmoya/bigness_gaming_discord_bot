@@ -44,16 +44,16 @@ module.exports = {
       );
       if (session) {
         // Check if user is already in session
-        /* const userInSession = session.members.find(
+        const userInSession = session.members.find(
           (member) => member.userId === interaction.user.id
         );
         if (userInSession) {
           interaction.reply({
-            content: "Ya estás en esta sesión",
+            content: "¡Ya estás en esta sesión!",
             ephemeral: true,
           });
           return;
-        } */
+        }
         // Check if session is full
         if (session.members.length < session.maxMembers) {
           session.members.push({
@@ -77,20 +77,18 @@ module.exports = {
             .messages.fetch();
 
           let message = null;
-          let found = false;
           let embed = null;
           //iterate over messages
-          messages.forEach((msg) => {
-            if (msg.embeds.length > 0) {
-              embed = msg.embeds[0];
-              if (embed.footer.text === "ID de la sesión: " + session.id) {
-                message = msg;
-                found = true;
-                return;
+          for (const [key, value] of messages) {
+            if (value.embeds.length > 0) {
+              if (value.embeds[0].footer.text === "ID de la sesión: " + buttonId) {
+                message = value;
+                embed = value.embeds[0];
+                break;
               }
             }
-          });
-          if (!found) {
+          }
+          if (message == null) {
             await interaction.reply({
               content: "¡No se encontró la sesión!",
               ephemeral: true,
@@ -106,7 +104,14 @@ module.exports = {
               .setStyle(ButtonStyle.Success),
           ]);
           if (session.members.length === session.maxMembers) {
-            color = "#FF0000";
+            color = "Red";
+            row = new ActionRowBuilder().addComponents([
+              new ButtonBuilder()
+                .setCustomId("joinButton_" + buttonId)
+                .setLabel("Sesión llena")
+                .setStyle(ButtonStyle.Danger)
+                .setDisabled(true),
+            ]);
           }
 
           const members = new Array(session.maxMembers);
@@ -115,6 +120,7 @@ module.exports = {
             members[index] = `<@${member.userId}>`;
           });
 
+          console.log("Embed:");
           console.log(embed);
 
           const embed2 = new EmbedBuilder()
@@ -139,11 +145,7 @@ module.exports = {
             .setColor(color)
             .setTimestamp();
 
-          if (color != "Green") {
-            message.edit({ embeds: [embed2] });
-          } else {
-            message.edit({ embeds: [embed2], components: [row] });
-          }
+          message.edit({ embeds: [embed2], components: [row] });
 
           interaction.reply({
             content: `Te has unido a la sesión de <@${session.leaderId}>`,
@@ -168,12 +170,19 @@ module.exports = {
     const details = interaction.options.getString("detalles");
     const players = interaction.options.getInteger("tamaño_grupo");
 
+    //get game from videogames.json
+    const gameStored = videogames.list.find(
+      (videogame) => videogame.name === game
+    );
+
     const uuidSession = uuidv4();
 
     userReferences.user_sessions.push({
       id: uuidSession,
       leaderId: interaction.user.id,
       game: game,
+      description: details,
+      thumbnail: gameStored.thumbnail,
       maxMembers: players,
       members: [
         {
@@ -206,11 +215,6 @@ module.exports = {
     members.fill("Vacío");
     //first member is always the leader
     members[0] = `<@${user.id}>`;
-
-    //get game from videogames.json
-    const gameStored = videogames.list.find(
-      (videogame) => videogame.name === game
-    );
 
     const embed = new EmbedBuilder()
       .setAuthor({ name: user.username, iconURL: user.avatarURL() })
