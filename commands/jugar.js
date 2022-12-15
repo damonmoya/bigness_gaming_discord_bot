@@ -1,12 +1,17 @@
-const { SlashCommandBuilder } = require("discord.js");
-const { ActionRowBuilder } = require("discord.js");
-const { ButtonBuilder, ButtonStyle, InteractionType } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  ActionRowBuilder,
+  ChannelType,
+  PermissionsBitField,
+  ButtonBuilder,
+  ButtonStyle,
+  InteractionType,
+  EmbedBuilder,
+} = require("discord.js");
 const { v4: uuidv4 } = require("uuid");
 
 const videogames = require("../data/videogames.json");
 const userReferences = require("../data/userSessions.json");
-
-const { EmbedBuilder } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -71,7 +76,7 @@ module.exports = {
           );
 
           // Update embed
-          const channel = process.env.CONTACT_CHANNEL_ID;
+          const channel = process.env.FIND_GROUP_CHANNEL_ID;
           const messages = await client.channels.cache
             .get(channel)
             .messages.fetch();
@@ -81,7 +86,10 @@ module.exports = {
           //iterate over messages
           for (const [key, value] of messages) {
             if (value.embeds.length > 0) {
-              if (value.embeds[0].footer.text === "ID de la sesión: " + buttonId) {
+              if (
+                value.embeds[0].footer.text ===
+                "ID de la sesión: " + buttonId
+              ) {
                 message = value;
                 embed = value.embeds[0];
                 break;
@@ -120,9 +128,6 @@ module.exports = {
             members[index] = `<@${member.userId}>`;
           });
 
-          console.log("Embed:");
-          console.log(embed);
-
           const embed2 = new EmbedBuilder()
             .setAuthor({
               name: embed.author.name,
@@ -147,6 +152,16 @@ module.exports = {
 
           message.edit({ embeds: [embed2], components: [row] });
 
+          const voiceChannelId = session.voiceChannelId;
+          const voiceChannel = await client.channels.cache
+            .get(voiceChannelId)
+            .then((channel) => {
+              channel.permissionOverwrites.edit(interaction.user.id, {
+                Connect: true,
+                Speak: true,
+              });
+            });
+
           interaction.reply({
             content: `Te has unido a la sesión de <@${session.leaderId}>`,
             ephemeral: true,
@@ -166,6 +181,8 @@ module.exports = {
       return;
     }
 
+    //MAIN COMMAND
+
     const game = interaction.options.getString("juego");
     const details = interaction.options.getString("detalles");
     const players = interaction.options.getInteger("tamaño_grupo");
@@ -176,31 +193,6 @@ module.exports = {
     );
 
     const uuidSession = uuidv4();
-
-    userReferences.user_sessions.push({
-      id: uuidSession,
-      leaderId: interaction.user.id,
-      game: game,
-      description: details,
-      thumbnail: gameStored.thumbnail,
-      maxMembers: players,
-      members: [
-        {
-          userId: interaction.user.id,
-        },
-      ],
-    });
-
-    const fs = require("fs");
-    fs.writeFile(
-      "./data/userSessions.json",
-      JSON.stringify(userReferences),
-      (err) => {
-        if (err) {
-          console.log(err);
-        }
-      }
-    );
 
     const row = new ActionRowBuilder().addComponents([
       new ButtonBuilder()
@@ -236,11 +228,106 @@ module.exports = {
       .setTimestamp();
 
     const guild = client.guilds.cache.get(process.env.GUILD_ID);
-    const channel = guild.channels.cache.get(process.env.FIND_GROUP_CHANNEL_ID);
-    channel.send({ embeds: [embed], components: [row] });
-    await interaction.reply({
-      content: `¡Grupo creado en <#${channel.id}>!`,
-      ephemeral: true,
+    const channelFindGroup = guild.channels.cache.get(
+      process.env.FIND_GROUP_CHANNEL_ID
+    );
+    channelFindGroup.send({ embeds: [embed], components: [row] });
+
+    //get the id of the message just sent
+    const message = await channelFindGroup.messages.fetch().then((messages) => {
+      //iterate over messages
+      for (const [key, value] of messages) {
+        if (value.embeds.length > 0) {
+          if (
+            value.embeds[0].footer.text ===
+            "ID de la sesión: " + uuidSession
+          ) {
+            return value;
+          }
+        }
+      }
     });
+    
+
+    //create channel
+    const userChannelName = `Grupo de ${user.username}`;
+    const userChannel = await guild.channels
+      .create({
+        name: userChannelName,
+        type: ChannelType.GuildVoice,
+        parent: process.env.GROUP_CATEGORY_ID,
+        permissionOverwrites: [
+          {
+            id: interaction.guild.id,
+            deny: [
+              PermissionsBitField.Flags.Connect,
+              PermissionsBitField.Flags.Speak,
+            ],
+          },
+          {
+            id: interaction.user.id,
+            allow: [
+              PermissionsBitField.Flags.ViewChannel,
+              PermissionsBitField.Flags.Connect,
+              PermissionsBitField.Flags.Speak,
+            ],
+          },
+        ],
+      })
+      .then((channel) => {
+        //reply to user
+        channel.setUserLimit(players);
+        interaction.reply({
+          content: `¡Grupo de voz creado en <#${channel.id}>!`,
+          ephemeral: true,
+        });
+
+        //save session
+        userReferences.user_sessions.push({
+          id: uuidSession,
+          leaderId: interaction.user.id,
+          game: game,
+          description: details,
+          thumbnail: gameStored.thumbnail,
+          joinMessageId: message.id,
+          voiceChannelId: channel.id,
+          maxMembers: players,
+          members: [
+            {
+              userId: interaction.user.id,
+            },
+          ],
+        });
+
+        const fs = require("fs");
+        fs.writeFile(
+          "./data/userSessions.json",
+          JSON.stringify(userReferences),
+          (err) => {
+            if (err) {
+              console.log(err);
+            }
+          }
+        );
+        //delete channel after 10 seconds
+        setTimeout(() => {
+          channel.delete();
+          message.delete();
+          //delete session
+          const index = userReferences.user_sessions.findIndex(
+            (session) => session.id === uuidSession
+          );
+          userReferences.user_sessions.splice(index, 1);
+          fs.writeFile(
+            "./data/userSessions.json",
+            JSON.stringify(userReferences),
+            (err) => {
+              if (err) {
+                console.log(err);
+              }
+            }
+          );
+        }, 10000);
+      });
   },
 };
